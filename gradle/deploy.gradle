@@ -1,0 +1,10 @@
+tasks.register('deployDocker-svemar04', Exec) {
+    group = 'deployment'
+    description = 'Build and deploy watchdog scheduler, professional runner and screenshots on svemar04'
+    dependsOn tasks.named('check'), tasks.named('bootJar')
+    commandLine 'bash', "$projectDir/scripts/deploy-svemar04.sh", version.toString()
+}
+tasks.register('upload-to-svemar04') {
+    group = 'deployment'
+    dependsOn tasks.named('deployDocker-svemar04')
+}

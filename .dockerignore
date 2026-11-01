@@ -1,0 +1,7 @@
+*
+!Dockerfile
+!build/
+build/*
+!build/libs/
+build/libs/*
+!build/libs/softiq-watchdog-app-4.1.0-RELEASE.jar

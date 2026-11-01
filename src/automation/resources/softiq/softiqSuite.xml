@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="SoftiqSuite">
+    <test name="UnsecuredControllers">
+        <classes>
+            <class name="cz.softiq.tests.softiq.UnsecuredControllerTest" />
+        </classes>
+    </test>
+    <test name="AdminControllers">
+        <classes>
+            <class name="cz.softiq.tests.softiq.AdminControllerTest" />
+        </classes>
+    </test>
+    <test name="UserControllers">
+        <classes>
+            <class name="cz.softiq.tests.softiq.UserControllerTest" />
+        </classes>
+    </test>
+    <test name="SoftiqGui">
+        <classes>
+            <class name="cz.softiq.tests.softiq.SoftiqGuiTest" />
+        </classes>
+    </test>
+</suite>

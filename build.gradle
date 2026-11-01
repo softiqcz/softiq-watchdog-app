@@ -1,0 +1,91 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.3'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.diffplug.spotless' version '6.20.0'
+}
+group = 'cz.softiq'
+version = '4.1.0-RELEASE'
+java { toolchain { languageVersion = JavaLanguageVersion.of(24) } }
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ['-Xlint:deprecation', '-Xlint:unchecked']
+}
+spotless { java { googleJavaFormat('1.17.0') } }
+repositories {
+    if (providers.gradleProperty('useMavenLocal').isPresent()) { mavenLocal() }
+    mavenCentral()
+    maven {
+        url = uri('https://maven.pkg.github.com/softiqcz/softiq-core-app')
+        credentials {
+            username = findProperty('github.username') ?: System.getenv('GITHUB_USERNAME')
+            password = findProperty('github.token') ?: System.getenv('GITHUB_TOKEN')
+        }
+        content { includeGroup 'cz.softiq.core' }
+    }
+    maven {
+        url = uri('https://maven.pkg.github.com/softiqcz/softiq-watchdog-core')
+        credentials {
+            username = findProperty('github.username') ?: System.getenv('GITHUB_USERNAME')
+            password = findProperty('github.token') ?: System.getenv('GITHUB_TOKEN')
+        }
+        content { includeGroup 'cz.softiq.watchdog' }
+    }
+}
+dependencies {
+    implementation 'cz.softiq.watchdog:softiq-watchdog-core:1.0.0'
+    annotationProcessor 'org.projectlombok:lombok:1.18.40'
+    testImplementation 'org.mockito:mockito-core'
+}
+test { useTestNG() }
+// Keep the historical task name for callers, but publish one executable Boot JAR.
+tasks.register('shadowJar') { dependsOn tasks.named('bootJar') }
+tasks.named('jar') { enabled = false }
+
+springBoot { mainClass = 'cz.softiq.watchdog.WatchdogApplication' }
+dependencies { implementation 'org.jsoup:jsoup:1.21.1' }
+// Operational suites are executable runtime payload, never part of unit test discovery.
+sourceSets {
+    automation {
+        java.setSrcDirs(['src/automation/java'])
+        resources.setSrcDirs(['src/automation/resources'])
+    }
+}
+configurations {
+    automationImplementation.extendsFrom implementation
+    automationRuntimeOnly.extendsFrom runtimeOnly
+    automationAnnotationProcessor.extendsFrom annotationProcessor
+}
+// A declared dependency is also visible to IntelliJ's Gradle module model.
+dependencies { automationImplementation sourceSets.main.output }
+
+bootJar {
+    dependsOn tasks.named('automationClasses')
+    classpath += sourceSets.automation.output
+}
+apply from: 'gradle/deploy.gradle'
+
+dependencies { testRuntimeOnly 'com.h2database:h2' }
+
+tasks.register('verifyWatchdogArtifact') {
+    group = 'verification'
+    dependsOn tasks.named('bootJar')
+    doLast {
+        new java.util.zip.ZipFile(tasks.named('bootJar').get().archiveFile.get().asFile).withCloseable { zip ->
+            def names = zip.entries().collect { it.name }
+            ['cz/softiq/watchdog/WatchdogApplication.class',
+             'cz/softiq/service/watchdog/service/schedule/ScheduleService.class',
+             'cz/softiq/tests/watchdog/WatchDogs.class',
+             'watchdog/watchDogSyncProfessional.xml',
+             'clients/runInMorningSuite.xml'].each { required ->
+                if (!names.contains("BOOT-INF/classes/${required}".toString()))
+                    throw new GradleException("Watchdog payload is missing ${required}")
+            }
+            if (names.any { it.startsWith('BOOT-INF/classes/') && it.contains('/controller/') })
+                throw new GradleException('Watchdog contains API controllers')
+            if (names.any { it.contains('/cz/softiq/isolation/') })
+                throw new GradleException('Isolated tests must not be packaged')
+        }
+    }
+}
+tasks.named('check') { dependsOn tasks.named('verifyWatchdogArtifact') }
+spotless { java { target 'src/**/*.java' } }

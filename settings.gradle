@@ -1,0 +1,5 @@
+rootProject.name = 'softiq-watchdog-app'
+// Opt into source substitution when working on the sibling shared library.
+if (providers.gradleProperty('watchdogCoreDir').isPresent()) {
+    includeBuild(providers.gradleProperty('watchdogCoreDir').get())
+}
