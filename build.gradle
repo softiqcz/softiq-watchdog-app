@@ -5,36 +5,30 @@ plugins {
     id 'com.diffplug.spotless' version '6.20.0'
 }
 group = 'cz.softiq'
-version = '4.1.0-RELEASE'
+version = '5.0.0-RELEASE'
 java { toolchain { languageVersion = JavaLanguageVersion.of(24) } }
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ['-Xlint:deprecation', '-Xlint:unchecked']
 }
-spotless { java { googleJavaFormat('1.17.0') } }
+spotless {
+    java {
+        googleJavaFormat('1.17.0')
+        target 'src/**/*.java'
+    }
+}
 repositories {
     if (providers.gradleProperty('useMavenLocal').isPresent()) { mavenLocal() }
     mavenCentral()
-    maven {
-        url = uri('https://maven.pkg.github.com/softiqcz/softiq-core-app')
-        credentials {
-            username = findProperty('github.username') ?: System.getenv('GITHUB_USERNAME')
-            password = findProperty('github.token') ?: System.getenv('GITHUB_TOKEN')
+    ['cz.softiq.core': 'softiq-core-app', 'cz.softiq.watchdog': 'softiq-watchdog-core'].each { packageGroup, repository ->
+        maven {
+            url = uri("https://maven.pkg.github.com/softiqcz/${repository}")
+            credentials {
+                username = findProperty('github.username') ?: System.getenv('GITHUB_USERNAME')
+                password = findProperty('github.token') ?: System.getenv('GITHUB_TOKEN')
+            }
+            content { includeGroup packageGroup }
         }
-        content { includeGroup 'cz.softiq.core' }
     }
-    maven {
-        url = uri('https://maven.pkg.github.com/softiqcz/softiq-watchdog-core')
-        credentials {
-            username = findProperty('github.username') ?: System.getenv('GITHUB_USERNAME')
-            password = findProperty('github.token') ?: System.getenv('GITHUB_TOKEN')
-        }
-        content { includeGroup 'cz.softiq.watchdog' }
-    }
-}
-dependencies {
-    implementation 'cz.softiq.watchdog:softiq-watchdog-core:1.0.0'
-    annotationProcessor 'org.projectlombok:lombok:1.18.40'
-    testImplementation 'org.mockito:mockito-core'
 }
 test { useTestNG() }
 // Keep the historical task name for callers, but publish one executable Boot JAR.
@@ -42,29 +36,27 @@ tasks.register('shadowJar') { dependsOn tasks.named('bootJar') }
 tasks.named('jar') { enabled = false }
 
 springBoot { mainClass = 'cz.softiq.watchdog.WatchdogApplication' }
-dependencies { implementation 'org.jsoup:jsoup:1.21.1' }
-// Operational suites are executable runtime payload, never part of unit test discovery.
-sourceSets {
-    automation {
-        java.setSrcDirs(['src/automation/java'])
-        resources.setSrcDirs(['src/automation/resources'])
-    }
-}
+// Operational suites are packaged separately from ordinary unit tests.
+sourceSets { automation {} }
 configurations {
     automationImplementation.extendsFrom implementation
     automationRuntimeOnly.extendsFrom runtimeOnly
     automationAnnotationProcessor.extendsFrom annotationProcessor
 }
-// A declared dependency is also visible to IntelliJ's Gradle module model.
-dependencies { automationImplementation sourceSets.main.output }
+dependencies {
+    implementation 'cz.softiq.watchdog:softiq-watchdog-core:1.0.1'
+    implementation 'org.jsoup:jsoup:1.21.1'
+    annotationProcessor 'org.projectlombok:lombok:1.18.40'
+    // A declared dependency also exposes main output to IntelliJ's module classpath.
+    automationImplementation sourceSets.main.output
+    testImplementation 'org.mockito:mockito-core'
+    testRuntimeOnly 'com.h2database:h2'
+}
 
 bootJar {
     dependsOn tasks.named('automationClasses')
     classpath += sourceSets.automation.output
 }
-apply from: 'gradle/deploy.gradle'
-
-dependencies { testRuntimeOnly 'com.h2database:h2' }
 
 tasks.register('verifyWatchdogArtifact') {
     group = 'verification'
@@ -88,4 +80,5 @@ tasks.register('verifyWatchdogArtifact') {
     }
 }
 tasks.named('check') { dependsOn tasks.named('verifyWatchdogArtifact') }
-spotless { java { target 'src/**/*.java' } }
+
+apply from: 'gradle/deploy.gradle'

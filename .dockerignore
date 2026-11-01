@@ -4,4 +4,4 @@
 build/*
 !build/libs/
 build/libs/*
-!build/libs/softiq-watchdog-app-4.1.0-RELEASE.jar
+!build/libs/softiq-watchdog-app-5.0.0-RELEASE.jar

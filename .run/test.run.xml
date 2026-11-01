@@ -19,7 +19,7 @@
     <option name="PROPERTIES_FILE" value="" />
     <envs>
       <env name="MODE_SELECTOR" value="gui" />
-      <env name="SPRING_PROFILE_ACTIVE" value="dev" />
+      <env name="SPRING_PROFILE_ACTIVE" value="prod" />
     </envs>
     <properties />
     <listeners />
