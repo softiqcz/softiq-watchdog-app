@@ -78,26 +78,11 @@ class WatchDogHtmlOfferParser {
   }
 
   private void validateSrealitySearchTitle(Document document, WatchDogEntity watchDog) {
-    String expectedAddress = StringUtils.normalizeSpace(watchDog.getSearchAddress());
-    if (StringUtils.isBlank(expectedAddress)) {
-      throw new IllegalStateException(
-          "Missing expected Sreality search address for watchdog " + watchDog.getId());
-    }
     Element title = document.selectFirst("h1[data-e2e=search-title]");
     if (title == null) {
       throw new IllegalStateException("Missing Sreality search title in " + document.location());
     }
-    String actualTitle = StringUtils.normalizeSpace(title.text());
-    if (!StringUtils.containsIgnoreCase(actualTitle, expectedAddress)) {
-      throw new IllegalStateException(
-          "Sreality search title mismatch for watchdog "
-              + watchDog.getId()
-              + ": expected address '"
-              + expectedAddress
-              + "', but title was '"
-              + actualTitle
-              + "'");
-    }
+    SrealitySearchAddress.validate(title.text(), watchDog);
   }
 
   public String extractSrealityDetailPrice(String pageSource, String offerId) {

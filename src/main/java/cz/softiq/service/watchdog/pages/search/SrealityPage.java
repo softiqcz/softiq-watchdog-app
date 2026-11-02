@@ -19,6 +19,7 @@ import cz.softiq.core.service.ICoreSoftiqService;
 import cz.softiq.service.automation.scraper.service.IScraperService;
 import cz.softiq.service.automation.watchdogSearch.service.IWatchDogAutomationService;
 import cz.softiq.service.automation.watchdogSearch.service.IWatchDogOfferService;
+import cz.softiq.service.automation.watchdogSearch.service.SrealitySearchAddress;
 import cz.softiq.service.automation.watchdogSearch.service.WatchDogOfferUtils;
 import cz.softiq.service.watchdog.entity.WatchDogBuilder;
 import cz.softiq.service.watchdog.entity.WatchDogEntity;
@@ -37,7 +38,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.ElementClickInterceptedException;
 import org.openqa.selenium.JavascriptExecutor;
-import org.testng.Assert;
 
 @Slf4j
 public class SrealityPage
@@ -96,8 +96,7 @@ public class SrealityPage
 
       $x("//button[@type='submit']").click();
       $x("//button[@id='estates-sorter-button']").should(Condition.visible, Duration.ofSeconds(30));
-      Assert.assertTrue(
-          $x("//h1[@data-e2e='search-title']").getText().contains(watchDog.getSearchAddress()));
+      SrealitySearchAddress.validate($x("//h1[@data-e2e='search-title']").getText(), watchDog);
       watchDogBuilder.setIsChangedUrl(true);
       saveUrl(watchDog, TRUE, SREALITY, watchDogBuilder);
     } else {
@@ -304,8 +303,7 @@ public class SrealityPage
 
   public List<WatchDogEstatesEntity> getLatestOffers(
       Set<String> existingOfferIds, WatchDogEntity watchDog) {
-    Assert.assertTrue(
-        $x("//h1[@data-e2e='search-title']").getText().contains(watchDog.getSearchAddress()));
+    SrealitySearchAddress.validate($x("//h1[@data-e2e='search-title']").getText(), watchDog);
     List<WatchDogEstatesEntity> newOffers = new ArrayList<>();
     ElementsCollection offers = $$x("//ul[@data-e2e]/li");
     for (int i = 0; i < offers.size(); i++) {

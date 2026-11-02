@@ -1,6 +1,7 @@
 FROM eclipse-temurin:24-jdk AS jdk
 FROM debian:trixie-slim
 COPY --from=jdk /opt/java/openjdk /opt/java/openjdk
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH="/opt/java/openjdk/bin:${PATH}"
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates chromium chromium-driver xvfb xauth docker.io fonts-liberation && rm -rf /var/lib/apt/lists/*
